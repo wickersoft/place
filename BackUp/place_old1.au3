@@ -1,5 +1,5 @@
 #include <Array.au3>
-#include <WinHTTP.au3>
+#include <WinHTTQ.au3>
 
 Global $hSession = _WinHTTPOpen()
 Global $Wi_ReadBufferSize = 262144
@@ -8,55 +8,36 @@ Dim $cookies[100][2]
 
 ;;;;;;;;;;;;; PARAMETERS
 
-$credentials_list = StringSplit(FileRead("nNpvhd8R.txt"), @CRLF, 3)
-$x_min = 396
-$x_max = 445
-$y_min = 630
-$y_max = 652
+$creds = "brainiac94:whigger94"
+$x = 404
+$y = 632
 $color = 3
 
 ;;;;;;;;;;;;; code starts here
 
-$account_index = 500
 
-While 1
-	Sleep(3000)
-	$account_index = Mod($account_index + 1, UBound($credentials_list))
-	$creds = $credentials_list[$account_index]
-	ConsoleWrite("Logging in as " & $creds & @CRLF)
-	$modhash = get_session($creds, $cookies)
-	If @error Or $modhash = "" Then
-		ConsoleWrite("!> Error logging in. Invalid credentials or banned" & @CRLF)
-		Sleep(3000)
-		ContinueLoop
-	EndIf
+; Debug lines are tabbed off to the right. Hopefully this makes it slightly more readable.
 
-	ConsoleWrite("+> modhash: " & $modhash & @CRLF & @CRLF & @CRLF)
+								ConsoleWrite("Logging in as " & $creds & @CRLF)
+$modhash = get_session($creds, $cookies)
+If @error Then ConsoleWrite("!> Error logging in. Invalid credentials or banned" & @CRLF)
+								ConsoleWrite("+> modhash: " & $modhash & @CRLF & @CRLF & @CRLF)
 
-	ConsoleWrite("Waiting a bit")
-	For $i = 0 To 3
-		ConsoleWrite(".")
-		Sleep(1000)
-	Next
+								ConsoleWrite("Waiting a bit")
+For $i = 0 To 5
+								ConsoleWrite(".")
+	Sleep(1000)
+Next
+								ConsoleWrite(@CRLF)
 
-	ConsoleWrite(@CRLF)
+				;_ArrayDisplay($cookies)
 
-	ConsoleWrite("Requesting to draw" & @CRLF)
+								ConsoleWrite("Requesting to draw" & @CRLF)
 
-	$http = do_draw(Random($x_min, $x_max, 1), Random($y_min, $y_max, 1), $color, $cookies, $modhash)
-	$status = BinaryToString($http[0])
+$http = do_draw($x, $y, $color, $cookies, $modhash)
 
-	If StringInStr($status, "Too Many Requests") Then
-		ConsoleWrite("-> Account is on cooldown" & @CRLF)
-	ElseIf StringInStr($status, "Forbidden") Then
-		ConsoleWrite("!> Account is banned" & @CRLF)
-	ElseIf StringInStr($status, "wait_seconds") Then
-		ConsoleWrite("+> Placed pixel successfully (?)" & @CRLF)
-	EndIf
-WEnd
-
-;ConsoleWrite("Result: " & @CRLF)
-;ConsoleWrite(BinaryToString($http[0]))
+								ConsoleWrite("Result: " & @CRLF)
+								ConsoleWrite(BinaryToString($http[0]))
 
 ;;;;;;; end of main
 
@@ -67,6 +48,7 @@ Func get_session($creds, ByRef $cookies)
 	$a = _https("www.reddit.com", "api/login/" & $user, "op=login-main&user=" & $user & "&passwd=" & $passwd & "&api_type=json")
 	;ConsoleWrite("-> " & BinaryToString($a[0]) & @CRLF)
 	$http = BinaryToString($a[0])
+	ConsoleWrite($http & @CRLF)
 
 	ProcessCookies($a[1], $cookies)
 
@@ -76,12 +58,14 @@ Func get_session($creds, ByRef $cookies)
 	SetCookie($user & "_recent_srs", "t5_2sxhs", $cookies)
 	SetCookie("pc", "in", $cookies)
 
+	ConsoleWrite("-> " & CompileCookies($cookies) & @CRLF)
+
 	$modhash = stringextract($http, '"modhash": "', '",')
 	Return $modhash
 EndFunc   ;==>get_session
 
 Func do_draw($x, $y, $color, $session_cookies, $modhash)
-	$paint_http = _https("www.reddit.com", "api/place/draw.json", "x=" & $x & "&y=" & $y & "&color=" & $color, CompileCookies($session_cookies), "x-modhash: " & $modhash & @CRLF & _
+	$paint_http = _https("www.reddit.com", "api/place/draw.json", "x=474&y=659&color=5", CompileCookies($session_cookies), "x-modhash: " & $modhash & @CRLF & _
 			"x-requested-with: XMLHttpRequest" & @CRLF)
 	Return $paint_http
 EndFunc   ;==>do_draw

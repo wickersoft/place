@@ -1,5 +1,5 @@
 #include <Array.au3>
-#include <WinHTTP.au3>
+#include <WinHTTQ.au3>
 
 Global $hSession = _WinHTTPOpen()
 Global $Wi_ReadBufferSize = 262144
@@ -8,7 +8,7 @@ Dim $cookies[100][2]
 
 ;;;;;;;;;;;;; PARAMETERS
 
-$credentials_list = StringSplit(FileRead("nNpvhd8R.txt"), @CRLF, 3)
+$credentials_list = StringSplit(FileRead("nNpvhd8R.txt"), @CRLF, 1)
 $x_min = 396
 $x_max = 445
 $y_min = 630
@@ -17,42 +17,38 @@ $color = 3
 
 ;;;;;;;;;;;;; code starts here
 
-$account_index = 500
-
 While 1
-	Sleep(3000)
-	$account_index = Mod($account_index + 1, UBound($credentials_list))
-	$creds = $credentials_list[$account_index]
-	ConsoleWrite("Logging in as " & $creds & @CRLF)
-	$modhash = get_session($creds, $cookies)
-	If @error Or $modhash = "" Then
-		ConsoleWrite("!> Error logging in. Invalid credentials or banned" & @CRLF)
-		Sleep(3000)
-		ContinueLoop
-	EndIf
+ConsoleWrite("Logging in as " & $creds & @CRLF)
+$modhash = get_session($creds, $cookies)
+If @error Then
+	ConsoleWrite("!> Error logging in. Invalid credentials or banned" & @CRLF)
+	Exit
+EndIf
 
-	ConsoleWrite("+> modhash: " & $modhash & @CRLF & @CRLF & @CRLF)
+ConsoleWrite("+> modhash: " & $modhash & @CRLF & @CRLF & @CRLF)
 
-	ConsoleWrite("Waiting a bit")
-	For $i = 0 To 3
-		ConsoleWrite(".")
-		Sleep(1000)
-	Next
+ConsoleWrite("Waiting a bit")
+For $i = 0 To 3
+	ConsoleWrite(".")
+	Sleep(1000)
+Next
 
-	ConsoleWrite(@CRLF)
+ConsoleWrite(@CRLF)
 
-	ConsoleWrite("Requesting to draw" & @CRLF)
+ConsoleWrite("Requesting to draw" & @CRLF)
 
-	$http = do_draw(Random($x_min, $x_max, 1), Random($y_min, $y_max, 1), $color, $cookies, $modhash)
-	$status = BinaryToString($http[0])
+$http = do_draw(Random($x_min, $x_max, 1), Random($y_min, $y_max, 1), $color, $cookies, $modhash)
+$status = BinaryToString($http[0])
 
-	If StringInStr($status, "Too Many Requests") Then
-		ConsoleWrite("-> Account is on cooldown" & @CRLF)
-	ElseIf StringInStr($status, "Forbidden") Then
-		ConsoleWrite("!> Account is banned" & @CRLF)
-	ElseIf StringInStr($status, "wait_seconds") Then
-		ConsoleWrite("+> Placed pixel successfully (?)" & @CRLF)
-	EndIf
+If StringInStr($status, "Too Many Requests") Then
+	ConsoleWrite("-> Account is on cooldown" & @CRLF)
+ElseIf StringInStr($status, "Forbidden") Then
+	ConsoleWrite("!> Account is banned" & @CRLF)
+	Exit
+ElseIf StringInStr($status, "wait_seconds") Then
+	ConsoleWrite("+> Placed pixel successfully (?)" & @CRLF)
+EndIf
+
 WEnd
 
 ;ConsoleWrite("Result: " & @CRLF)
